@@ -70,7 +70,7 @@ Las cuentas eligen `admin` o `user` al registrarse. El servidor valida y guarda 
 
 El registro recibe `{ "name": "Ana", "email": "ana@example.test", "password": "Tu contraseña", "role": "admin" }`. El rol solo puede ser `admin` o `user`. Devuelve `{ "user": { "id", "name", "email", "role" } }` y una cookie de sesión; no devuelve el hash de la contraseña. Un error devuelve `{ "error": "mensaje" }` con su estado HTTP.
 
-Por WebSocket el cliente envía `start`, `answer` con `answer` entre 0 y 3, `next` o `sync` en el campo `type`. El servidor envía `{ "type": "state", "room": ... }` o `{ "type": "error", "message": ... }`. El estado incluye fase, pregunta visible, plazo y jugadores con sus puntuaciones; se adapta al usuario que recibe el mensaje.
+Por WebSocket el cliente envía `start`, `answer` con `answer` entre 0 y 3, `next` o `sync` en el campo `type`. El servidor envía `{ "type": "state", "room": ... }` o `{ "type": "error", "message": ... }`. El estado incluye fase, pregunta visible, plazo `endsAt`, hora del servidor `serverNow` y jugadores con sus puntuaciones; se adapta al usuario que recibe el mensaje. El navegador calcula el tiempo restante con `endsAt - serverNow` y utiliza un reloj monotónico para descontarlo, evitando que el reloj de la PC agregue o quite segundos a la ronda.
 
 ## Pruebas
 

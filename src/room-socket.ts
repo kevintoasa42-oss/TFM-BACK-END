@@ -18,7 +18,7 @@ export function attachRoomSocket(socket: RoomSocket, rooms: Persistence["rooms"]
   const send = (entry: StoredRoom) => {
     if (!active || socket.readyState !== 1 || entry.revision <= lastRevision) return;
     lastRevision = entry.revision;
-    socket.send(JSON.stringify({ type: "state", room: roomView(entry.room, userId) }));
+    socket.send(JSON.stringify({ type: "state", room: roomView(entry.room, userId, Date.now()) }));
   };
   const sync = async () => {
     try { send(await readStoredRoom(rooms, code)); }
@@ -44,4 +44,3 @@ export function attachRoomSocket(socket: RoomSocket, rooms: Persistence["rooms"]
   });
   send(initial);
 }
-

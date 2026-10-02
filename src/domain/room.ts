@@ -8,7 +8,7 @@ export interface Room {
 }
 export interface RoomView {
   code: string; examName: string; phase: RoomPhase; questionIndex: number; questionCount: number;
-  endsAt: number | null; isHost: boolean;
+  endsAt: number | null; serverNow: number; isHost: boolean;
   question: { prompt: string; options: Question["options"]; correctIndex?: AnswerIndex } | null;
   players: { id: string; name: string; score: number; answered: boolean; answer?: AnswerIndex | null }[];
 }
@@ -61,10 +61,10 @@ export function advanceRoom(room: Room, userId: string, now: number): Room {
     players: room.players.map((item) => ({ ...item, answer: null })) };
 }
 
-export function roomView(room: Room, userId: string): RoomView {
+export function roomView(room: Room, userId: string, now: number): RoomView {
   const question = room.phase === "lobby" ? null : room.questions[room.questionIndex];
   return { code: room.code, examName: room.examName, phase: room.phase, questionIndex: room.questionIndex,
-    questionCount: room.questions.length, endsAt: room.endsAt, isHost: userId === room.hostId,
+    questionCount: room.questions.length, endsAt: room.endsAt, serverNow: now, isHost: userId === room.hostId,
     question: question ? { prompt: question.prompt, options: question.options,
       ...(room.phase === "reveal" || room.phase === "finished" ? { correctIndex: question.correctIndex } : {}) } : null,
     players: room.players.map((player) => ({ id: player.id, name: player.name, score: player.score,

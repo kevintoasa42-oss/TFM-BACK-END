@@ -131,6 +131,8 @@ try {
     host.state((room) => room.phase === "question"), guest.state((room) => room.phase === "question"),
   ]);
   assert.equal(hostQuestion.question.prompt, guestQuestion.question.prompt);
+  assert.equal(typeof guestQuestion.serverNow, "number", "El estado comunica el reloj del servidor");
+  assert.ok(guestQuestion.endsAt - guestQuestion.serverNow > 0 && guestQuestion.endsAt - guestQuestion.serverNow <= 20_000, "El plazo visible se calcula dentro de los 20 segundos de la ronda");
   assert.equal("correctIndex" in guestQuestion.question, false, "La solución queda oculta durante la pregunta");
   host.send({ type: "answer", answer: 0 });
   await host.state((room) => room.phase === "question" && room.players.some((player) => player.id === admin.result.user.id && player.answered));

@@ -54,7 +54,7 @@ export async function createExamRoom(store: Persistence, user: AuthUser, examId:
 export async function joinGameRoom(rooms: Persistence["rooms"], code: string, user: AuthUser): Promise<RoomView> {
   const result = await joinStoredRoom(rooms, code, user.id, user.name);
   if (result.error) throw new ApplicationError(409, result.error);
-  return roomView(result.room, user.id);
+  return roomView(result.room, user.id, Date.now());
 }
 
 export async function joinStoredRoom(rooms: Persistence["rooms"], code: string, userId: string, name: string): Promise<StoredRoom> {
