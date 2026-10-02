@@ -1,0 +1,29 @@
+{
+  "name": "flashreto-backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/node-server.ts",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "start": "node --env-file-if-exists=.env dist/server.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/router.test.mjs test/room.test.mjs test/content.test.mjs",
+    "test:integration": "node test/integration.mjs"
+  },
+  "dependencies": {
+    "pg": "8.23.1",
+    "ws": "8.22.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/pg": "8.23.1",
+    "@types/ws": "8.18.2",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  }
+}
