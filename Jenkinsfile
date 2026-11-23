@@ -15,7 +15,7 @@ pipeline {
       steps {
         script {
           env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
-          env.CI_PROJECT = "ci-${env.BUILD_TAG}".toLowerCase().replaceAll('[^a-z0-9_-]', '-')
+          env.CI_PROJECT = "ci-${env.BUILD_TAG}".toLowerCase().replaceAll('[^a-z0-9-]', '-')
         }
         sh 'node --version && npm --version && docker --version && docker compose version'
       }
@@ -39,14 +39,14 @@ pipeline {
           node -e 'const c=require("node:crypto");process.stdout.write("POSTGRES_PASSWORD="+c.randomBytes(32).toString("hex")+"\\nPOSTGRES_PORT=0\\nBACKEND_PORT=0\\n")' > .env.ci
           docker compose --project-name "$CI_PROJECT" --env-file .env.ci up --build --detach --wait --wait-timeout 180
           docker network connect "${CI_PROJECT}_default" "$JENKINS_CONTAINER"
-          FLASHRETO_URL=http://backend:4000 npm run test:integration
+          FLASHRETO_URL="http://${CI_PROJECT}-backend-1:4000" npm run test:integration
         '''
       }
       post {
         always {
           sh '''
             docker network disconnect "${CI_PROJECT}_default" "$JENKINS_CONTAINER" 2>/dev/null || true
-            docker compose --project-name "$CI_PROJECT" --env-file .env.ci down --volumes --remove-orphans || true
+            docker compose --project-name "$CI_PROJECT" --env-file .env.ci down --volumes --remove-orphans --rmi local || true
             rm -f .env.ci
           '''
         }
@@ -69,18 +69,23 @@ pipeline {
             fi
             repository="$DOCKERHUB_USER/$IMAGE_NAME"
             if [ -n "${CHANGE_ID:-}" ]; then channel="pr-$CHANGE_ID"; else channel=latest; fi
+            export DOCKER_CONFIG="$WORKSPACE@tmp/docker-config"
+            trap 'rm -rf "$DOCKER_CONFIG"' EXIT
             echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USER" --password-stdin
             for tag in "$IMAGE_TAG" "$channel"; do
               docker tag "$IMAGE_NAME:$IMAGE_TAG" "$repository:$tag"
               docker push "$repository:$tag"
+              docker image rm "$repository:$tag"
             done
-            docker logout
           '''
         }
       }
     }
   }
   post {
-    always { cleanWs() }
+    always {
+      sh 'docker image rm "$IMAGE_NAME:$IMAGE_TAG" 2>/dev/null || true'
+      cleanWs()
+    }
   }
 }
