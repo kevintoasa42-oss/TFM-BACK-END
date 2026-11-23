@@ -1,0 +1,75 @@
+jenkins:
+  systemMessage: "FlashReto CI: pruebas, imágenes Docker y publicación en Docker Hub."
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: JENKINS_CONTAINER
+            value: "${JENKINS_CONTAINER:-flashreto-jenkins}"
+          - key: BACKEND_REPO_URL
+            value: "https://github.com/${GITHUB_OWNER:-kevintoasa42-oss}/TFM-BACK-END.git"
+unclassified:
+  location:
+    url: "${JENKINS_URL:-http://localhost:8080/}"
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: dockerhub
+              description: "Docker Hub (usuario y access token)"
+              username: "${DOCKERHUB_USERNAME:-}"
+              password: "${DOCKERHUB_TOKEN:-}"
+          - usernamePassword:
+              scope: GLOBAL
+              id: github
+              description: "GitHub (opcional, evita el límite de la API anónima)"
+              username: "${GITHUB_OWNER:-kevintoasa42-oss}"
+              password: "${GITHUB_TOKEN:-}"
+jobs:
+  - script: |
+      def owner = System.getenv('GITHUB_OWNER') ?: 'kevintoasa42-oss'
+      def hasToken = System.getenv('GITHUB_TOKEN')
+      ['flashreto-backend': 'TFM-BACK-END', 'flashreto-frontend': 'TFM-UNIR'].each { jobName, repo ->
+        multibranchPipelineJob(jobName) {
+          displayName(jobName + ' (' + repo + ')')
+          branchSources {
+            branchSource {
+              source {
+                github {
+                  id(repo)
+                  repoOwner(owner)
+                  repository(repo)
+                  repositoryUrl('https://github.com/' + owner + '/' + repo)
+                  configuredByUrl(true)
+                  if (hasToken) { credentialsId('github') }
+                  traits {
+                    gitHubBranchDiscovery { strategyId(1) }
+                    gitHubPullRequestDiscovery { strategyId(1) }
+                    headWildcardFilter {
+                      includes('main PR-*')
+                      excludes('')
+                    }
+                  }
+                }
+              }
+            }
+          }
+          orphanedItemStrategy {
+            discardOldItems { numToKeep(10) }
+          }
+          triggers {
+            periodicFolderTrigger { interval(hasToken ? '2m' : '10m') }
+          }
+        }
+      }

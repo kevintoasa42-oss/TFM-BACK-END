@@ -1,0 +1,24 @@
+name: flashreto-ci
+services:
+  jenkins:
+    build: .
+    container_name: flashreto-jenkins
+    # Root solo para usar el socket de Docker del equipo local; no exponer a internet.
+    user: root
+    environment:
+      JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER:-admin}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?Copia jenkins/.env.example a jenkins/.env y define JENKINS_ADMIN_PASSWORD}
+      JENKINS_URL: http://localhost:${JENKINS_PORT:-8080}/
+      JENKINS_CONTAINER: flashreto-jenkins
+      GITHUB_OWNER: ${GITHUB_OWNER:-kevintoasa42-oss}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      DOCKERHUB_USERNAME: ${DOCKERHUB_USERNAME:-}
+      DOCKERHUB_TOKEN: ${DOCKERHUB_TOKEN:-}
+    ports:
+      - "127.0.0.1:${JENKINS_PORT:-8080}:8080"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+volumes:
+  jenkins-home:
