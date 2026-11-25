@@ -86,3 +86,18 @@ npm run test:integration
 ```
 
 Puedes indicar otra API con `FLASHRETO_URL`. Estas pruebas crean cuentas con correos `example.test`, editan su contenido y juegan hasta los resultados. Las pruebas del sistema completo se ejecutan desde el frontend con `npm run test:system`; usan un volumen y puertos desechables y comprueban la reconexión y persistencia al recrear los tres contenedores. No deben ejecutarse contra una instalación con datos personales.
+
+## Integración continua con GitHub Actions
+
+`.github/workflows/ci.yml` se ejecuta en cada pull request hacia `main`, en cada cambio de `main` y manualmente: `npm ci`, pruebas unitarias, compilación, imagen Docker y prueba de integración con Docker Compose. En `main`, el trabajo `publish` sube `<usuario>/flashreto-backend` a Docker Hub con las etiquetas `<commit>` y `latest`. Para activarlo, define en GitHub (Settings → Secrets and variables → Actions) los secretos `DOCKERHUB_USERNAME` y `DOCKERHUB_TOKEN` (token de acceso de Docker Hub con permiso Read & Write). Sin ellos la publicación se omite.
+
+## Alternativa: integración continua con Jenkins
+
+Cada repositorio tiene un `Jenkinsfile`. Jenkins corre en Docker con la configuración de `jenkins/` (plugins y Configuration as Code), y crea solo dos trabajos multibranch, `flashreto-backend` y `flashreto-frontend`, que construyen `main` y los pull requests hacia `main`:
+
+```bash
+cp jenkins/.env.example jenkins/.env   # define JENKINS_ADMIN_PASSWORD y, si quieres publicar, DOCKERHUB_USERNAME/DOCKERHUB_TOKEN
+docker compose --project-directory jenkins up --build --detach
+```
+
+Jenkins queda en `http://localhost:8080`. Las etapas de ambos pipelines son: `npm ci`, pruebas unitarias, compilación, imagen Docker, prueba con Docker Compose (integración en el backend; los tres contenedores, integración y persistencia tras recrearlos en el frontend) y publicación en Docker Hub como `<usuario>/flashreto-backend` y `<usuario>/flashreto-frontend`, con las etiquetas `<build>-<commit>` y `latest` (o `pr-<número>`). Sin credenciales de Docker Hub la publicación se omite. Jenkins usa el Docker del equipo mediante `/var/run/docker.sock`, así que debe usarse solo en local.
